@@ -57,19 +57,26 @@ Catatan: Pastikan JDK (javac/java) sudah terpasang dan tersedia di `PATH`.
 
 ```mermaid
 flowchart TD
-	A[Main Menu]
-	A -->|1: Pesan Ticket Pesawat| B[Flight Menu]
-	B --> C[Search Flights (11)]
-	B --> D[Book Flight (12)]
-	B --> E[Cancel Reservation (13)]
-	B --> F[View All Reservations (14)]
-	C --> G[FlightService.getAllFlights / searchFlight]
-	D --> H[FlightService.reservation]
-	E --> I[FlightService.cancelReservation]
-	F --> J[FlightService.getAllReservations]
-	H --> K[Reservation created]
-	I --> L[Reservation removed]
+    A["Main Menu"]
+    A -->|"1: Pesan Ticket Pesawat"| B["Flight Menu"]
+
+    B --> C["11: Search Flights"]
+    B --> D["12: Book Flight"]
+    B --> E["13: Cancel Reservation"]
+    B --> F["14: View All Reservations"]
+
+    C --> G["FlightService.getAllFlights()"]
+    C --> H["FlightService.searchFlight()"]
+
+    D --> I["FlightService.reservation()"]
+    I --> J["Reservation Created"]
+
+    E --> K["FlightService.cancelReservation()"]
+    K --> L["Reservation Removed"]
+
+    F --> M["FlightService.getAllReservations()"]
 ```
+
 
 ---
 
