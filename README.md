@@ -77,7 +77,3 @@ flowchart TD
     F --> M["FlightService.getAllReservations()"]
 ```
 
-
----
-
-Jika Anda mau, saya bisa juga menambahkan `Makefile` atau skrip `run.sh` untuk mempermudah kompilasi dan eksekusi.
