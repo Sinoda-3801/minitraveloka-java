@@ -1,31 +1,44 @@
 package Services.Flights;
 
-import java.util.ArrayList;
 import Services.Customer.Customer;
-import Services.Reservation.ReservationInterface;
-import Services.Reservation.Reservation;
+import Services.Reservation.FlightReservation;
+import Services.Reservation.ReservationService;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
-public class FlightService implements ReservationInterface {
-    private ArrayList<Flight> flights;
-    private ArrayList<Reservation> reservations;
+/** Logika bisnis penerbangan: inventori, pencarian, dan pemesanan. */
+public class FlightService {
+    private final List<Flight> flights = new ArrayList<>();
+    private final ReservationService reservationService;
 
-    private void initSampleData() {
-        flights.add(new Flight(1, "Garuda Indonesia", "Jakarta", "Bali", "2024-07-01 08:00", "2024-07-01 10:00", 1500000.0, 50));
-        flights.add(new Flight(2, "Lion Air", "Jakarta", "Surabaya", "2024-07-02 09:00", "2024-07-02 11:00", 800000.0, 100));
-        flights.add(new Flight(3, "AirAsia", "Jakarta", "Kuala Lumpur", "2024-07-03 10:00", "2024-07-03 12:00", 1200000.0, 75));
-        flights.add(new Flight(4, "Sriwijaya Air", "Jakarta", "Medan", "2024-07-04 11:00", "2024-07-04 13:00", 900000.0, 80));
-        flights.add(new Flight(5, "Citilink", "Jakarta", "Yogyakarta", "2024-07-05 12:00", "2024-07-05 14:00", 700000.0, 60));
-    }
-
-    public FlightService() {
-        this.flights = new ArrayList<Flight>();
-        this.reservations = new ArrayList<Reservation>();
-        
+    public FlightService(ReservationService reservationService) {
+        this.reservationService = reservationService;
         initSampleData();
     }
 
-    public ArrayList<Flight> getAllFlights() {
+    /** Data contoh memakai tanggal relatif terhadap hari ini agar selalu relevan. */
+    private void initSampleData() {
+        add(1, "GA-401", "Garuda Indonesia", "Jakarta", "Bali", 1, "08:00", "10:50", 1500000, 50);
+        add(2, "JT-610", "Lion Air", "Jakarta", "Bali", 1, "11:30", "14:20", 950000, 100);
+        add(3, "QG-880", "Citilink", "Jakarta", "Bali", 1, "17:15", "20:05", 1100000, 3);
+        add(4, "GA-402", "Garuda Indonesia", "Jakarta", "Bali", 2, "08:00", "10:50", 1650000, 40);
+        add(5, "JT-312", "Lion Air", "Jakarta", "Surabaya", 1, "09:00", "10:30", 800000, 100);
+        add(6, "QZ-7510", "AirAsia", "Jakarta", "Kuala Lumpur", 2, "10:00", "12:50", 1200000, 75);
+        add(7, "SJ-250", "Sriwijaya Air", "Jakarta", "Medan", 3, "11:00", "13:30", 900000, 80);
+        add(8, "QG-150", "Citilink", "Jakarta", "Yogyakarta", 1, "12:00", "13:15", 700000, 60);
+        add(9, "GA-403", "Garuda Indonesia", "Bali", "Jakarta", 3, "13:00", "13:55", 1550000, 45);
+        add(10, "JT-611", "Lion Air", "Surabaya", "Jakarta", 2, "15:00", "16:30", 820000, 90);
+    }
+
+    private void add(int id, String number, String airline, String origin, String destination,
+                     int dayOffset, String dep, String arr, double price, int seats) {
+        flights.add(new Flight(id, number, airline, origin, destination,
+                LocalDate.now().plusDays(dayOffset), dep, arr, price, seats));
+    }
+
+    public List<Flight> getAllFlights() {
         return flights;
     }
 
@@ -33,63 +46,39 @@ public class FlightService implements ReservationInterface {
         return flights.stream()
                 .filter(flight -> flight.getId() == id)
                 .findFirst()
-                .orElse(null);
+                .orElseThrow(() -> new IllegalArgumentException("Penerbangan dengan ID " + id + " tidak ditemukan."));
     }
 
-    public ArrayList<Flight> searchFlight(String search) {
-        String keyword = search.toLowerCase();
-
+    /**
+     * Mencari penerbangan berdasarkan kota asal, tujuan, tanggal, dan jumlah penumpang.
+     * Hasil diurutkan dari harga termurah.
+     */
+    public List<Flight> searchFlights(String origin, String destination, LocalDate date, int passengers) {
         return flights.stream()
-                .filter(flight ->
-                        flight.getAirline().toLowerCase().contains(keyword)
-                        || flight.getOrigin().toLowerCase().contains(keyword)
-                        || flight.getDestination().toLowerCase().contains(keyword)
-                )
-                .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+                .filter(f -> f.getOrigin().equalsIgnoreCase(origin.trim()))
+                .filter(f -> f.getDestination().equalsIgnoreCase(destination.trim()))
+                .filter(f -> f.getDate().equals(date))
+                .filter(f -> f.getAvailableSeats() >= passengers)
+                .sorted(Comparator.comparingDouble(Flight::getPrice))
+                .toList();
     }
 
-    public Reservation reservation(Integer bookId, Customer customer) {
-        Flight selectedFlight = flights.stream()
-                .filter(flight -> flight.getId() == bookId)
-                .findFirst()
-                .orElse(null);
-        
-        if (selectedFlight == null) {
-            throw new IllegalArgumentException("Penerbangan dengan ID " + bookId + " tidak ditemukan.");
+    public FlightReservation bookFlight(int flightId, Customer customer, int passengers) {
+        if (passengers <= 0) {
+            throw new IllegalArgumentException("Jumlah penumpang harus lebih dari 0.");
         }
 
-        if (selectedFlight.getAvailableSeats() <= 0) {
-            throw new IllegalStateException("Maaf, penerbangan ini sudah penuh.");
+        Flight flight = getFlightById(flightId);
+        if (flight.getAvailableSeats() < passengers) {
+            throw new IllegalStateException("Kursi tidak cukup. Tersisa " + flight.getAvailableSeats()
+                    + " kursi, diminta " + passengers + ".");
         }
 
-        selectedFlight.setAvailableSeats(selectedFlight.getAvailableSeats() - 1);
+        flight.setAvailableSeats(flight.getAvailableSeats() - passengers);
 
-        String generateBookingId = "R" + (reservations.size() + 1);
-        reservations.add(
-          new Reservation(generateBookingId, customer, selectedFlight)
-        );
-
-        return reservations.get(reservations.size() - 1);
-    }
-
-    public Reservation cancelReservation(String reservationId) {
-        Reservation selectedReservation = reservations.stream()
-                .filter(reservation -> reservation.bookingCode().equals(reservationId.toString()))
-                .findFirst()
-                .orElse(null);
-
-        if (selectedReservation == null) {
-            throw new IllegalArgumentException("Reservasi dengan ID " + reservationId + " tidak ditemukan.");
-        }
-
-        Flight flightToCancel = selectedReservation.getFlight();
-        flightToCancel.setAvailableSeats(flightToCancel.getAvailableSeats() + 1);
-        reservations.remove(selectedReservation);
-
-        return selectedReservation;
-    }
-
-    public ArrayList<Reservation> getAllReservations() {
-        return reservations;
+        FlightReservation reservation = new FlightReservation(
+                reservationService.nextConfirmationNumber(), customer, flight, passengers);
+        reservationService.addReservation(reservation);
+        return reservation;
     }
 }

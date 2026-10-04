@@ -3,10 +3,12 @@ package Services.Customer;
 public class Customer {
     private String name;
     private String identityNumber;
+    private String contact;
 
-    public Customer(String name, String identityNumber) {
+    public Customer(String name, String identityNumber, String contact) {
         this.name = name;
         this.identityNumber = identityNumber;
+        this.contact = contact;
     }
 
     public String getName() {
@@ -25,15 +27,20 @@ public class Customer {
         this.identityNumber = identityNumber;
     }
 
+    public String getContact() {
+        return contact;
+    }
+
+    public void setContact(String contact) {
+        this.contact = contact;
+    }
+
     @Override
     public String toString() {
-        return String.format(
-            """
+        return """
             Nama Pelanggan   : %s
             Nomor Identitas  : %s
-            """,
-            name,
-            identityNumber
-        );
+            Kontak           : %s
+            """.formatted(name, identityNumber, contact);
     }
 }
