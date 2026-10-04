@@ -1,25 +1,24 @@
 package Services.Reservation;
 
 import Services.Customer.Customer;
-import Services.Flights.Flight;
+import Services.Utils.CurrencyFormatter;
 
-public class Reservation {
-    private String bookingCode;
+/**
+ * Kelas dasar reservasi. Dibuat sealed + abstract: hanya FlightReservation
+ * dan HotelReservation yang boleh mewarisinya.
+ * (Pada unnamed module, subclass sealed harus berada di package yang sama.)
+ */
+public abstract sealed class Reservation permits FlightReservation, HotelReservation {
+    private final String confirmationNumber;
     private Customer customer;
-    private Flight flight;
 
-    public Reservation(String bookingCode, Customer customer, Flight flight) {
-        this.bookingCode = bookingCode;
+    protected Reservation(String confirmationNumber, Customer customer) {
+        this.confirmationNumber = confirmationNumber;
         this.customer = customer;
-        this.flight = flight;
     }
 
-    public String bookingCode() {
-        return bookingCode;
-    }
-
-    public void setId(String bookingCode) {
-        this.bookingCode = bookingCode;
+    public String getConfirmationNumber() {
+        return confirmationNumber;
     }
 
     public Customer getCustomer() {
@@ -30,31 +29,31 @@ public class Reservation {
         this.customer = customer;
     }
 
-    public Flight getFlight() {
-        return flight;
-    }
+    /** Jenis reservasi, misalnya "PENERBANGAN" atau "HOTEL". */
+    public abstract String getType();
 
-    public void setFlight(Flight flight) {
-        this.flight = flight;
-    }
+    /** Total harga seluruh reservasi. */
+    public abstract double getTotalPrice();
 
-      @Override
-      public String toString() {
-          return String.format(
-              """
-              ID Reservasi     : %s
-              Nama Pelanggan   : %s
-              Nomor Identitas  : %s
-              Maskapai         : %s
-              Asal             : %s
-              Tujuan           : %s
-              """,
-              bookingCode,
-              this.customer.getName(),
-              this.customer.getIdentityNumber(),
-              this.flight.getAirline(),
-              this.flight.getOrigin(),
-              this.flight.getDestination()
-          );
-      }
+    /** Detail khusus tiap jenis reservasi (di-override subclass -> polimorfisme). */
+    protected abstract String getDetails();
+
+    @Override
+    public String toString() {
+        return """
+            ---------- RESERVASI %s ----------
+            No. Konfirmasi   : %s
+            Nama Pelanggan   : %s
+            Nomor Identitas  : %s
+            Kontak           : %s
+            %sTotal Harga      : %s
+            """.formatted(
+                getType(),
+                confirmationNumber,
+                customer.getName(),
+                customer.getIdentityNumber(),
+                customer.getContact(),
+                getDetails(),
+                CurrencyFormatter.rupiah(getTotalPrice()));
+    }
 }

@@ -1,10 +1,12 @@
 package Services.Reservation;
 
-import Services.Customer.Customer;
-import java.util.ArrayList;
+import java.util.List;
 
+/** Kontrak pengelolaan reservasi (penyimpanan, pembatalan, dan daftar). */
 public interface ReservationInterface {
-    public Reservation reservation(Integer bookId, Customer customer);
-    public Reservation cancelReservation(String reservationId);
-    public ArrayList<Reservation> getAllReservations();
+    void addReservation(Reservation reservation);
+
+    Reservation cancelReservation(String confirmationNumber) throws ReservationNotFoundException;
+
+    List<Reservation> getAllReservations();
 }
